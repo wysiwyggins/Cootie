@@ -12,6 +12,7 @@ let isRunning = false; // Initially set to false to show the start screen
 let gameStarted = false; // New variable to track if the game has started
 let isSecondAnimation = false; // Track if we are in the second animation phase
 let isThirdAnimation = false; // New state for the third animation
+let isThirdAnimationStarted = false; // New flag to handle initial setup for third animation
 let individualNumbers = []; 
 let backgroundColors = [ '#ffb700','#ae413e','#81a71e', '#0089c8'];
 let colorToNameMap = { // Map hex colors to names for easy lookup
@@ -99,15 +100,34 @@ function draw() {
       }
   } 
   else if (isThirdAnimation) {
-      // Third animation logic
-      if (imgTimer % 13 === 0) {
-          let numIndex = individualNumbers[currentImage];
-          image(individualNumberImages[numIndex], (width / 2) - (individualNumberImages[numIndex].width / 4), 50, individualNumberImages[numIndex].width / 2, individualNumberImages[numIndex].height / 2);
-          individualNumberSounds[numIndex].play();
-          currentImage = (currentImage + 1) % individualNumbers.length;
-      }
-      imgTimer++;
-  }
+    if (!isThirdAnimationStarted) {
+        // Initial setup for the third animation remains the same.
+    }
+
+    if (imgTimer % 13 === 0) {
+        let numIndex = individualNumbers[currentImage];
+
+        // Calculate the position and size of the image.
+        let imgX = (width / 2) - (individualNumberImages[numIndex].width / 4);
+        let imgY = 50;
+        let imgW = individualNumberImages[numIndex].width / 2;
+        let imgH = individualNumberImages[numIndex].height / 2;
+
+        // Clear the area where the individual number will be drawn.
+        // This uses the background color to "erase" the previous number.
+        fill(lastBackgroundColor);
+        noStroke();
+        rect(imgX, imgY, imgW, imgH);
+
+        // Now draw the new individual number image.
+        image(individualNumberImages[numIndex], imgX, imgY, imgW, imgH);
+        individualNumberSounds[numIndex].play();
+
+        currentImage = (currentImage + 1) % individualNumbers.length;
+    }
+    imgTimer++;
+}
+
 }
 
 function keyPressed() {
@@ -128,7 +148,9 @@ function keyPressed() {
   }
   else if (key === ' ' && isThirdAnimation) {
     // Logic to stop the third animation
-    isThirdAnimation = false; // This will stop the third animation
-    // Optional: Reset or prepare for another round or state here
+    isThirdAnimation = false;
+    noLoop(); // Optionally, stop the draw loop or prepare for another state
+    // Ensure that isThirdAnimationStarted is also reset to prevent accidental restarts
+    isThirdAnimationStarted = false; // Reset this flag to allow proper restarting of the third animation
   }
 }
