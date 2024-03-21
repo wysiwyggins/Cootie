@@ -1,18 +1,21 @@
-let colorImages = []; // Array to hold your images
-let numberImages = []; // New array for the second animation
-let toneSounds = []; // Array for the tone sounds
+let colorImages = [];
+let numberImages = [];
+let cootieOpenImage;
+let toneSounds = [];
+let paperFlipSound;
 let individualNumberImages = [];
 let individualNumberSounds = [];
-let letterSounds = {}; // Object for the letter sounds
-let currentImage = 0; // Index of the currently displayed image
-let letterIndex = 0; // Index for the current letter in the second animation
-let imgTimer = 0; // Timer to control image switching
-let pauseTimer = 0; // Timer to control the pause before starting the second animation
-let isRunning = false; // Initially set to false to show the start screen
-let gameStarted = false; // New variable to track if the game has started
-let isSecondAnimation = false; // Track if we are in the second animation phase
-let isThirdAnimation = false; // New state for the third animation
-let isThirdAnimationStarted = false; // New flag to handle initial setup for third animation
+let letterSounds = {};
+let currentImage = 0;
+let letterIndex = 0;
+let imgTimer = 0;
+let pauseTimer = 0;
+let isFirstAnimation = false;
+let gameStarted = false;
+let isSecondAnimation = false;
+let isThirdAnimation = false;
+let isThirdAnimationStarted = false;
+let isFinalStage = false;
 let individualNumbers = []; 
 let backgroundColors = [ '#ffb700','#ae413e','#81a71e', '#0089c8'];
 let colorToNameMap = { // Map hex colors to names for easy lookup
@@ -21,7 +24,7 @@ let colorToNameMap = { // Map hex colors to names for easy lookup
   '#81a71e': 'green',
   '#0089c8': 'blue',
 };
-let lastBackgroundColor; // Store the last background color
+let lastBackgroundColor;
 
 function preload() {
   for (let i = 0; i < 4; i++) {
@@ -37,6 +40,8 @@ function preload() {
   "bdeglnoruwy".split('').forEach(letter => {
     letterSounds[letter] = loadSound(`/sounds/${letter}.wav`);
   });
+  paperFlipSound = loadSound('/sounds/paperflip.wav');
+  cootieOpenImage = loadImage('/images/cootie-open.png');
 }
 
 function setup() {
@@ -55,7 +60,7 @@ function draw() {
       return;
   }
   
-  if (isRunning) {
+  if (isFirstAnimation) {
       // First animation logic
       lastBackgroundColor = backgroundColors[currentImage];
       background(lastBackgroundColor);
@@ -66,13 +71,14 @@ function draw() {
           currentImage = (currentImage + 1) % colorImages.length;
       }
       imgTimer++;
+      
   } 
   else if (isSecondAnimation && !isThirdAnimation) {
       if (pauseTimer < 15) {
           // Pause logic before starting the second animation
           pauseTimer++;
           background(lastBackgroundColor);
-          image(colorImages[currentImage], 0, -50, width, height);
+          image(colorImages[(currentImage - 1 + colorImages.length) % colorImages.length], 0, -50, width, height);
       } 
       else {
           // Second animation logic
@@ -83,6 +89,7 @@ function draw() {
                       letterSounds[letter].play();
                       letterIndex++;
                   }
+                  console.log(`Second animation letter: ${letter}, index: ${letterIndex}`);
                   background(lastBackgroundColor);
                   image(numberImages[currentImage], 0, -50, width, height);
                   currentImage = (currentImage + 1) % numberImages.length;
@@ -91,66 +98,80 @@ function draw() {
           } 
           else {
               // Prepare for the third animation
+              let lastImageIndex = (currentImage - 1 + numberImages.length) % numberImages.length;
+              individualNumbers = lastImageIndex % 2 === 0 ? [3, 4, 7, 8] : [1, 2, 5, 6];
+
               isThirdAnimation = true;
-              imgTimer = 1; // Reset timer for the third animation
-              currentImage = 0; // Reset index for individualNumbers
-              individualNumbers = currentImage % 2 === 0 ? [3, 4, 7, 8] : [1, 2, 5, 6];
-              // No need to manually pause here, as the third animation will start immediately
+              isThirdAnimationStarted = false; // Ensure the third animation setup runs properly
+              pauseTimer = 0; // Reset pause timer for a brief pause before the third animation
+              imgTimer = 0; // Reset timer for the third animation
+              currentImage = 0; // Reset for the third animation
           }
       }
   } 
-  else if (isThirdAnimation) {
-    if (!isThirdAnimationStarted) {
-        // Initial setup for the third animation remains the same.
+  else if (isThirdAnimation && !isFinalStage) {
+    if (!isThirdAnimationStarted) { 
+      background(lastBackgroundColor); // Redraw the background only once
+      image(numberImages[currentImage], 0, -50, width, height); // Keep the last image of the second animation
+      isThirdAnimationStarted = true; // Ensure this setup runs only once
     }
 
     if (imgTimer % 13 === 0) {
         let numIndex = individualNumbers[currentImage];
-
         // Calculate the position and size of the image.
         let imgX = (width / 2) - (individualNumberImages[numIndex].width / 4);
         let imgY = 50;
         let imgW = individualNumberImages[numIndex].width / 2;
         let imgH = individualNumberImages[numIndex].height / 2;
-
-        // Clear the area where the individual number will be drawn.
-        // This uses the background color to "erase" the previous number.
         fill(lastBackgroundColor);
         noStroke();
         rect(imgX, imgY, imgW, imgH);
-
-        // Now draw the new individual number image.
         image(individualNumberImages[numIndex], imgX, imgY, imgW, imgH);
         individualNumberSounds[numIndex].play();
 
         currentImage = (currentImage + 1) % individualNumbers.length;
     }
     imgTimer++;
+  }
+  
+  if (isFinalStage) {
+    if (pauseTimer < 15) {
+        // Apply a brief pause before starting the final stage
+        pauseTimer++;
+    } else if (pauseTimer === 15) {
+        if (!paperFlipSound.isPlaying()) {
+            paperFlipSound.play();
+        }
+        pauseTimer++; // Increment to avoid replaying the sound
+    } else {
+        // Clear the canvas with the current background color and show the final image
+        background(lastBackgroundColor);
+        // Adjust positioning if necessary to place the image at the bottom of the canvas
+        image(cootieOpenImage, (width - cootieOpenImage.width) / 2, height - cootieOpenImage.height);
+    }
 }
-
 }
 
 function keyPressed() {
   if (key === ' ' && !gameStarted) {
     gameStarted = true;
-    isRunning = true;
+    isFirstAnimation = true;
     imgTimer = 0; // Correctly initializing imgTimer
   } else if (key === ' ' && gameStarted && !isSecondAnimation) {
-    isRunning = false; // Stop first animation
+    console.log(`Ending first animation on color: ${colorToNameMap[lastBackgroundColor]}, image index: ${currentImage}`);
+    isFirstAnimation = false; // Stop first animation
     isSecondAnimation = true; // Signal start of second animation phase
     pauseTimer = 0; // Correctly initializing pauseTimer
     imgTimer = 1; // Start imgTimer at 1 for the second animation
     currentImage = 0; // Reset for the second animation
     letterIndex = 0; // Reset letter index for the second animation
-  } else if (key === ' ' && isSecondAnimation && pauseTimer > 15) {
-    // This toggle is only needed if you want to pause/resume the second animation
-    // If the second animation should stop permanently once finished, you may not need this toggle
-  }
+
+  } 
   else if (key === ' ' && isThirdAnimation) {
-    // Logic to stop the third animation
-    isThirdAnimation = false;
-    noLoop(); // Optionally, stop the draw loop or prepare for another state
-    // Ensure that isThirdAnimationStarted is also reset to prevent accidental restarts
-    isThirdAnimationStarted = false; // Reset this flag to allow proper restarting of the third animation
+    isThirdAnimation = false; // Stop the third animation
+    isFinalStage = true; // Trigger the final stage
+    isThirdAnimationStarted = false; // Reset the third animation flag
+    pauseTimer = 0; // Reset the pause timer for the brief pause
+    loop(); // Ensure the draw loop is running if previously stopped with noLoop()
   }
 }
