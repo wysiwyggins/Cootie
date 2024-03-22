@@ -1,3 +1,10 @@
+const ATTRACT_MODE = 0;
+const COLOR_SELECTION = 1;
+const NUMBER_SET_SELECTION = 2;
+const INDIVIDUAL_NUMBER_SELECTION = 3;
+const REVEALED_MESSAGE = 4;
+let gameState = ATTRACT_MODE;
+
 let colorImages = [];
 let numberImages = [];
 let cootieOpenImage;
@@ -48,130 +55,188 @@ function setup() {
   createCanvas(800, 800);
   frameRate(30);
   textFont('Georgia');
-   textSize(32);
+  textSize(32);
   textAlign(CENTER, CENTER);
+  // Initialize game state
+  gameState = ATTRACT_MODE;
 }
 
 function draw() {
-  if (!gameStarted) {
-      background(backgroundColors[0]);
-      fill(255);
-      text("Press Space to Start", width / 2, height / 2);
-      return;
+  switch (gameState) {
+    case ATTRACT_MODE:
+      displayAttractMode();
+      break;
+    case COLOR_SELECTION:
+      runColorSelectionAnimation();
+      break;
+    case NUMBER_SET_SELECTION:
+      runNumberSetSelectionAnimation();
+      break;
+    case INDIVIDUAL_NUMBER_SELECTION:
+      runIndividualNumberSelectionAnimation();
+      break;
+    case REVEALED_MESSAGE:
+      displayRevealedMessage();
+      break;
   }
-  
-  if (isFirstAnimation) {
-      // First animation logic
-      lastBackgroundColor = backgroundColors[currentImage];
-      background(lastBackgroundColor);
-      image(colorImages[currentImage], 0, -50, width, height);
-
-      if (imgTimer % 13 === 0) {
-          toneSounds[currentImage % toneSounds.length].play();
-          currentImage = (currentImage + 1) % colorImages.length;
-      }
-      imgTimer++;
-      
-  } 
-  else if (isSecondAnimation && !isThirdAnimation) {
-      if (pauseTimer < 15) {
-          // Pause logic before starting the second animation
-          pauseTimer++;
-          background(lastBackgroundColor);
-          image(colorImages[(currentImage - 1 + colorImages.length) % colorImages.length], 0, -50, width, height);
-      } 
-      else {
-          // Second animation logic
-          if (letterIndex < colorToNameMap[lastBackgroundColor].length) {
-              if (imgTimer % 13 === 0) {
-                  let letter = colorToNameMap[lastBackgroundColor].charAt(letterIndex).toLowerCase();
-                  if (letterSounds[letter]) {
-                      letterSounds[letter].play();
-                      letterIndex++;
-                  }
-                  console.log(`Second animation letter: ${letter}, index: ${letterIndex}`);
-                  background(lastBackgroundColor);
-                  image(numberImages[currentImage], 0, -50, width, height);
-                  currentImage = (currentImage + 1) % numberImages.length;
-              }
-              imgTimer++;
-          } 
-          else {
-              // Prepare for the third animation
-              let lastImageIndex = (currentImage - 1 + numberImages.length) % numberImages.length;
-              individualNumbers = lastImageIndex % 2 === 0 ? [3, 4, 7, 8] : [1, 2, 5, 6];
-
-              isThirdAnimation = true;
-              isThirdAnimationStarted = false; // Ensure the third animation setup runs properly
-              pauseTimer = 0; // Reset pause timer for a brief pause before the third animation
-              imgTimer = 0; // Reset timer for the third animation
-              currentImage = 0; // Reset for the third animation
-          }
-      }
-  } 
-  else if (isThirdAnimation && !isFinalStage) {
-    if (!isThirdAnimationStarted) { 
-      background(lastBackgroundColor); // Redraw the background only once
-      image(numberImages[currentImage], 0, -50, width, height); // Keep the last image of the second animation
-      isThirdAnimationStarted = true; // Ensure this setup runs only once
-    }
-
-    if (imgTimer % 13 === 0) {
-        let numIndex = individualNumbers[currentImage];
-        // Calculate the position and size of the image.
-        let imgX = (width / 2) - (individualNumberImages[numIndex].width / 4);
-        let imgY = 50;
-        let imgW = individualNumberImages[numIndex].width / 2;
-        let imgH = individualNumberImages[numIndex].height / 2;
-        fill(lastBackgroundColor);
-        noStroke();
-        rect(imgX, imgY, imgW, imgH);
-        image(individualNumberImages[numIndex], imgX, imgY, imgW, imgH);
-        individualNumberSounds[numIndex].play();
-
-        currentImage = (currentImage + 1) % individualNumbers.length;
-    }
-    imgTimer++;
-  }
-  
-  if (isFinalStage) {
-    if (pauseTimer < 15) {
-        // Apply a brief pause before starting the final stage
-        pauseTimer++;
-    } else if (pauseTimer === 15) {
-        if (!paperFlipSound.isPlaying()) {
-            paperFlipSound.play();
-        }
-        pauseTimer++; // Increment to avoid replaying the sound
-    } else {
-        // Clear the canvas with the current background color and show the final image
-        background(lastBackgroundColor);
-        // Adjust positioning if necessary to place the image at the bottom of the canvas
-        image(cootieOpenImage, (width - cootieOpenImage.width) / 2, height - cootieOpenImage.height);
-    }
-}
 }
 
 function keyPressed() {
-  if (key === ' ' && !gameStarted) {
-    gameStarted = true;
-    isFirstAnimation = true;
-    imgTimer = 0; // Correctly initializing imgTimer
-  } else if (key === ' ' && gameStarted && !isSecondAnimation) {
-    console.log(`Ending first animation on color: ${colorToNameMap[lastBackgroundColor]}, image index: ${currentImage}`);
-    isFirstAnimation = false; // Stop first animation
-    isSecondAnimation = true; // Signal start of second animation phase
-    pauseTimer = 0; // Correctly initializing pauseTimer
-    imgTimer = 1; // Start imgTimer at 1 for the second animation
-    currentImage = 0; // Reset for the second animation
-    letterIndex = 0; // Reset letter index for the second animation
-
-  } 
-  else if (key === ' ' && isThirdAnimation) {
-    isThirdAnimation = false; // Stop the third animation
-    isFinalStage = true; // Trigger the final stage
-    isThirdAnimationStarted = false; // Reset the third animation flag
-    pauseTimer = 0; // Reset the pause timer for the brief pause
-    loop(); // Ensure the draw loop is running if previously stopped with noLoop()
+  if (key === ' ') {
+    switch (gameState) {
+      case ATTRACT_MODE:
+        gameState = COLOR_SELECTION;
+        console.log("Starting Color Selection Animation");
+        resetForColorSelection();
+        break;
+      case COLOR_SELECTION:
+        gameState = NUMBER_SET_SELECTION;
+        console.log(`Transitioning to Number Set Selection. Last color: ${colorToNameMap[lastBackgroundColor]}`);
+        prepareForNumberSetSelection();
+        break;
+      case NUMBER_SET_SELECTION:
+        gameState = INDIVIDUAL_NUMBER_SELECTION;
+        console.log("Starting Individual Number Selection Animation");
+        prepareForIndividualNumberSelection();
+        break;
+      case INDIVIDUAL_NUMBER_SELECTION:
+        gameState = REVEALED_MESSAGE;
+        console.log("Revealing Message");
+        prepareForMessageReveal();
+        break;
+      case REVEALED_MESSAGE:
+        // Optionally, loop back to the attract mode or stop the game
+        console.log("Game ended. Press space to restart.");
+        gameState = ATTRACT_MODE;
+        break;
+    }
   }
 }
+
+function displayAttractMode() {
+  background(backgroundColors[0]);
+  fill(255);
+  text("Press Space to Start", width / 2, height / 2);
+}
+
+function runColorSelectionAnimation() {
+  lastBackgroundColor = backgroundColors[currentImage];
+  background(lastBackgroundColor);
+  image(colorImages[currentImage], 0, -50, width, height);
+
+  if (imgTimer % 13 === 0) {
+    toneSounds[currentImage % toneSounds.length].play();
+    currentImage = (currentImage + 1) % colorImages.length;
+  }
+  imgTimer++;
+}
+
+function runNumberSetSelectionAnimation() {
+  if (pauseTimer < 15) {
+    pauseTimer++;
+    background(lastBackgroundColor);
+    image(colorImages[(currentImage - 1 + colorImages.length) % colorImages.length], 0, -50, width, height);
+  } else {
+    if (letterIndex < colorToNameMap[lastBackgroundColor].length) {
+      performLetterSelection();
+    } else {
+      prepareForIndividualNumberSelection();
+    }
+  }
+}
+
+function performLetterSelection() {
+  if (imgTimer % 13 === 0) {
+    let letter = colorToNameMap[lastBackgroundColor].charAt(letterIndex).toLowerCase();
+    letterSounds[letter]?.play();
+    letterIndex++;
+    background(lastBackgroundColor);
+    image(numberImages[currentImage], 0, -50, width, height);
+    currentImage = (currentImage + 1) % numberImages.length;
+  }
+  imgTimer++;
+}
+
+function prepareForIndividualNumberSelection() {
+  let lastImageIndex = (currentImage + 1 + numberImages.length) % numberImages.length; // +1 was a hack that fixed a problem showing final image
+  individualNumbers = lastImageIndex % 2 === 0 ? [3, 4, 7, 8] : [1, 2, 5, 6];
+
+  gameState = INDIVIDUAL_NUMBER_SELECTION;
+  pauseTimer = 0;
+  imgTimer = 0;
+  currentImage = 0;
+  console.log("Transitioning to Individual Number Selection");
+}
+
+function runIndividualNumberSelectionAnimation() {
+  if (!isThirdAnimationStarted) {
+    prepareThirdAnimation();
+  } else {
+    performIndividualNumberSelection();
+  }
+}
+
+function prepareThirdAnimation() {
+  background(lastBackgroundColor);
+  image(numberImages[currentImage + 1], 0, -50, width, height);
+  isThirdAnimationStarted = true;
+}
+
+function performIndividualNumberSelection() {
+  if (imgTimer % 13 === 0) {
+    let numIndex = individualNumbers[currentImage];
+    displayIndividualNumber(numIndex);
+    currentImage = (currentImage + 1) % individualNumbers.length; // +1 was a hack that fixed a problem showing final image
+  }
+  imgTimer++;
+}
+
+function displayIndividualNumber(numIndex) {
+  let imgX = (width / 2) - (individualNumberImages[numIndex].width / 4);
+  let imgY = 50;
+  fill(lastBackgroundColor);
+  noStroke();
+  rect(imgX, imgY, individualNumberImages[numIndex].width / 2, individualNumberImages[numIndex].height / 2);
+  image(individualNumberImages[numIndex], imgX, imgY, individualNumberImages[numIndex].width / 2, individualNumberImages[numIndex].height / 2);
+  individualNumberSounds[numIndex].play();
+}
+
+function displayRevealedMessage() {
+  if (pauseTimer < 15) {
+    pauseTimer++;
+  } else if (pauseTimer === 15) {
+    if (!paperFlipSound.isPlaying()) {
+      paperFlipSound.play();
+    }
+    pauseTimer++;
+  } else {
+    background(lastBackgroundColor);
+    image(cootieOpenImage, (width - cootieOpenImage.width) / 2, height - cootieOpenImage.height);
+  }
+}
+
+function resetForColorSelection() {
+  console.log("Resetting for Color Selection...");
+  // Reset any necessary variables for color selection
+  imgTimer = 0;
+  currentImage = 0;
+}
+
+function prepareForNumberSetSelection() {
+  console.log("Preparing for Number Set Selection...");
+  // Reset or set up any variables for the number set selection
+  imgTimer = 0;
+  pauseTimer = 0;
+  //letterIndex = 0; // Assuming this starts the letter animations
+}
+
+function prepareForMessageReveal() {
+  console.log("Preparing for Message Reveal...");
+  // Any setup needed before revealing the message
+  pauseTimer = 0; // If you're using a pause before revealing
+}
+
+
+
+
+
