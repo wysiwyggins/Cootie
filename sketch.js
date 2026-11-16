@@ -66,20 +66,20 @@ let fortunes = [
   
 function preload() {
   for (let i = 0; i < 4; i++) {
-    colorImages[i] = loadImage(`/images/cootie_${i}.png`);
-    numberImages[i] = loadImage(`/images/cootie-roll_${i}.png`);
-    toneSounds[i] = loadSound(`/sounds/tone_${i}.wav`);
+    colorImages[i] = loadImage(`./images/cootie_${i}.png`);
+    numberImages[i] = loadImage(`./images/cootie-roll_${i}.png`);
+    toneSounds[i] = loadSound(`./sounds/tone_${i}.wav`);
   }
   for (let i = 1; i <= 8; i++) {
-    individualNumberImages[i] = loadImage(`/images/${i}.png`);
-    individualNumberSounds[i] = loadSound(`/sounds/${i}.wav`);
+    individualNumberImages[i] = loadImage(`./images/${i}.png`);
+    individualNumberSounds[i] = loadSound(`./sounds/${i}.wav`);
   }
   // Load sounds for each letter in the color names
   "bdeglnoruwy".split('').forEach(letter => {
-    letterSounds[letter] = loadSound(`/sounds/${letter}.wav`);
+    letterSounds[letter] = loadSound(`./sounds/${letter}.wav`);
   });
-  paperFlipSound = loadSound('/sounds/paperflip.wav');
-  cootieOpenImage = loadImage('/images/cootie-open.png');
+  paperFlipSound = loadSound('./sounds/paperflip.wav');
+  cootieOpenImage = loadImage('./images/cootie-open.png');
 }
 
 function setup() {
