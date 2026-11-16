@@ -63,6 +63,7 @@ let fortunes = [
   let displayedFortune = ""; 
   let fortuneIndex = 0;
   let fortuneTimer = 0; 
+  
 function preload() {
   for (let i = 0; i < 4; i++) {
     colorImages[i] = loadImage(`/images/cootie_${i}.png`);
@@ -245,8 +246,8 @@ function displayIndividualNumber(numIndex) {
   let imgY = 50;
   fill(lastBackgroundColor);
   noStroke();
-  rect(imgX, imgY, individualNumberImages[numIndex].width / 2, individualNumberImages[numIndex].height / 2);
-  image(individualNumberImages[numIndex], imgX, imgY, individualNumberImages[numIndex].width / 2, individualNumberImages[numIndex].height / 2);
+  rect(imgX, imgY, individualNumberImages[numIndex].width / 3, individualNumberImages[numIndex].height / 3);
+  image(individualNumberImages[numIndex], imgX, imgY, individualNumberImages[numIndex].width / 3, individualNumberImages[numIndex].height / 3);
   individualNumberSounds[numIndex].play();
 }
 
